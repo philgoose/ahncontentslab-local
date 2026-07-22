@@ -19,7 +19,21 @@
 - 로컬 실행 시 실패하는 서버 통신(비밀번호 안내 ajax, CRM SDK) 무력화
 - 내부 링크 40개를 로컬 파일명으로 변환 (11페이지 상호 이동 구조)
 
-## 파이프라인 사용법
+## 자동 배포 (GitHub Actions)
+
+`raw/` 폴더에 저장본 HTML을 넣고 커밋하면, Actions가 자동으로 정리 파이프라인을
+실행해 `_site/`로 빌드하고 GitHub Pages에 배포한다. 서버에서 파이썬이 직접 도는
+구조라, Pages의 정적 호스팅 한계를 우회한다.
+
+```
+raw/*.html  →  tools/build_site.py (clean_imweb 적용)  →  _site/*.html  →  Pages 배포
+```
+
+- 워크플로: `.github/workflows/deploy.yml` (push 시 자동, 수동 실행도 가능)
+- 파일명 규칙: `raw/README.md` 참고
+- 라이브: https://philgoose.github.io/ahncontentslab-local/
+
+## 로컬에서 단일 파일 처리
 
 ```bash
 python3 tools/clean_imweb.py 저장한페이지.html 출력파일.html
