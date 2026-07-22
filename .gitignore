@@ -2,3 +2,7 @@
 Thumbs.db
 *.log
 .github/
+
+__pycache__/
+*.pyc
+_site/
