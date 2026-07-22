@@ -8,7 +8,7 @@ GitHub Actions가 이 스크립트를 실행한다.
   - 파일명이 SITEMAP 값과 일치하면 그대로, 아니면 원본명 유지
   - raw/ 가 비어있거나 없으면, 저장소 루트의 index.html 을 그대로 사용(현 상태 유지)
 """
-import os, shutil, sys
+import os, shutil, sys, re
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from clean_imweb import clean, SITEMAP
 
@@ -50,6 +50,32 @@ def main():
 
     # 3) Jekyll 비활성화(밑줄 폴더/파일 그대로 서빙)
     open(os.path.join(OUT, ".nojekyll"), "w").close()
+
+    # 3.5) 아직 존재하지 않는 페이지로 가는 링크는 '준비 중'으로 비활성화
+    #      (10개 하위 페이지가 raw/에 채워지면 자동으로 다시 살아난다)
+    present = {f for f in os.listdir(OUT) if f.endswith(".html")}
+    # index.html(홈)은 항상 살아있는 것으로 간주 — 자기 자신 링크가 죽으면 안 됨
+    missing = [fn for fn in SITEMAP.values() if fn not in present and fn != "index.html"]
+    if missing:
+        disable_css = (
+            '<style id="pending-links-style">'
+            'a.__pending{opacity:.45;cursor:not-allowed;position:relative}'
+            'a.__pending::after{content:"준비 중";font-size:9px;vertical-align:super;'
+            'margin-left:3px;color:#F3B94D;font-weight:700;letter-spacing:0}'
+            '</style>')
+        for fn in list(present):
+            fp = os.path.join(OUT, fn)
+            with open(fp, encoding="utf-8", errors="ignore") as f:
+                h = f.read()
+            for miss in missing:
+                # <a href="./MISS" ...>  →  클릭 막고 준비중 표시
+                h = re.sub(r'(<a\s+href=")\./' + re.escape(miss) + r'(")',
+                           r'\1javascript:void(0)\2 aria-disabled="true" class="__pending"', h)
+            if 'pending-links-style' not in h:
+                h = h.replace('</head>', disable_css + '</head>', 1)
+            with open(fp, "w", encoding="utf-8") as f:
+                f.write(h)
+        print(f"  미존재 링크 비활성화: {len(missing)}개 대상 → {missing}")
 
     # 4) 배포 결과 요약
     files = sorted(os.listdir(OUT))
