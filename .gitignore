@@ -1,7 +1,6 @@
 .DS_Store
 Thumbs.db
 *.log
-.github/
 
 __pycache__/
 *.pyc
