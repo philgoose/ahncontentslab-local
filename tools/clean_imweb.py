@@ -44,11 +44,18 @@ def clean(html: str) -> str:
                   "/* local: disabled */", html, count=1)
     html = re.sub(r"const c = window\.crmService;\s*c\.boot\(\{[\s\S]*?\}\)", "/* local: disabled */", html, count=1)
 
-    # 5) 내부 링크 → 로컬 파일명 (긴 경로 먼저 치환)
+    # 5) <base> 태그는 CDN 리소스(css/js/img)의 기준 경로이므로 항상 실제 도메인으로 보존.
+    #    (과거 버그: 홈 링크 치환이 base href까지 index.html로 바꿔 리소스가 전부 깨졌음)
+    html = re.sub(r'<base\s+href="[^"]*"\s*/?>',
+                  '<base href="https://www.ahncontentslab.co.kr/">', html, count=1)
+
+    # 6) 내부 <a> 링크만 로컬 파일명으로 변환 (긴 경로 먼저).
+    #    base가 실제 도메인이므로, 로컬 파일 링크는 './'로 base 영향을 차단해야
+    #    현재 폴더 기준으로 페이지 이동이 된다(리소스는 base로 로드, 링크는 로컬로 이동).
     for path, fname in sorted(SITEMAP.items(), key=lambda x: -len(x[0])):
         if path:
-            html = html.replace(f'href="https://www.ahncontentslab.co.kr/{path}"', f'href="{fname}"')
-    html = html.replace('href="https://www.ahncontentslab.co.kr/"', 'href="index.html"')
+            html = html.replace(f'<a href="https://www.ahncontentslab.co.kr/{path}"', f'<a href="./{fname}"')
+    html = html.replace('<a href="https://www.ahncontentslab.co.kr/"', '<a href="./index.html"')
 
     # 6) 텍스트 가독성 보정
     if 'local-final-polish' not in html:
